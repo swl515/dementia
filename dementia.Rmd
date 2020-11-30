@@ -42,6 +42,26 @@ Clinical visit data and patient data were stored in two separate Excel spreadshe
 
 ## Data Tidying{-}
 
+```{r data tidy}
+
+#Change the headings in patient data to a tidy format
+#look at existing column names
+colnames(patient)
+
+#create and assign new column names
+colnames_patient <- c("subject_ID", "group", "sex", "EDUC", "SES")
+names(patient) <- colnames_patient
+
+#Change headings in the visit data to more meaningful names and to a tidy format
+#look at existing column names
+colnames(visit)
+
+#create and assign new column names
+colnames_visit <- c("subject_ID", "MRI_number", "visit", "age", "MMSE_score", "CDR", "intracranial_volume", "whole_brain_volume", "atlas_scaling_factor")
+names(visit) <- colnames_visit
+```
+
+
 ## LDA{-}
 
 ## Random Forest{-}
