@@ -4,6 +4,7 @@ author: "Examination Number: Y3866839"
 date: "30/11/2020"
 output: 
   bookdown::html_document2: default
+bibliography: references/references.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -21,4 +22,4 @@ library(knitr)
 ## **Introduction**{-}
 The aim of this analysis is to bring together and tidy data collected from clinical visit data from 150 subjects aged between 60 and 96. Data collected included the subjects age, gender, years of education and socioeconomic status (assessed by the Hollingshead Index of Social Position). Each subject underwent MRIs on at least two separate visits (over one year apart) in order to assess estimated intracranial volume and normalised whole brain volume. They were also given a score at each visit for the Mini-Mental State Examination (MMSE), that is used in clinical practise to measure cognitive impairment, and were given a Clinical Dementia Rating. 
 
-The Clinical Dementia Rating (CDR) is a global rating device, first introduced in 1982. It is calculated on the basis of testing six cognitive and behavioural domains such as memory, orientation, judgment, problem solving, community affairs, home and hobbies and personal care. It is based on a five point scale of 0-3; 0 = no dementia, 0.5 = questionable dementia, 1 = mild cognitive impairment/ mild dementia, 2 = moderate cognitive impairment/ moderate dementia and 3 = severe cognitive impairment/ severe dementia. 
+The Clinical Dementia Rating (CDR) is a global rating device, first introduced in 1982. It is calculated on the basis of testing six cognitive and behavioural domains such as memory, orientation, judgment, problem solving, community affairs, home and hobbies and personal care. It is based on a five point scale of 0-3; 0 = no dementia, 0.5 = questionable dementia, 1 = mild cognitive impairment/ mild dementia, 2 = moderate cognitive impairment/ moderate dementia and 3 = severe cognitive impairment/ severe dementia [@Morris1997]
