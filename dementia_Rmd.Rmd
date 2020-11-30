@@ -1,0 +1,25 @@
+---
+title: "dementia"
+author: "Examination Number: Y3866839"
+date: "30/11/2020"
+output: 
+  bookdown::pdf_document2: default
+  bookdown::word_document2: default
+  bookdown::html_document2: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.retina = 3)
+
+library(tidyverse)
+library(magrittr)
+library(dplyr)
+library(knitr)
+```
+
+
+
+
