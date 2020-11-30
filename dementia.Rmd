@@ -17,6 +17,7 @@ library(tidyverse)
 library(magrittr)
 library(dplyr)
 library(knitr)
+library(readxl)
 ```
 
 ## Introduction{-}
@@ -29,6 +30,15 @@ The analysis performed here will combine the patient and clinical visit data and
 Analysis was conducted in R [@Rbase] using Rmarkdown [@Allaire2020; @Xie2018; @Xie2020]
 
 ## Data Import{-}
+```{r data import}
+#Read in the patient data and the visit data as two separate .txt files 
+
+patient <- read_excel("data_raw/patient_data.xlsx")
+
+visit <- read_excel("data_raw/visit_data.xlsx")
+```
+
+Clinical visit data and patient data were stored in two separate Excel spreadsheets. These were read into R separately so that (?????) they could first be tidied separately. This is necessary as there are only 150 observations in the patient data, whereas there are 373 observations in the visit data, as each patient had 2 or 3 separate MRI scans.
 
 ## Data Tidying{-}
 
