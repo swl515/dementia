@@ -8,7 +8,7 @@ bibliography: references/references.bib
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,
+knitr::opts_chunk$set(echo = FALSE,
                       warning = FALSE,
                       message = FALSE,
                       fig.retina = 3)
@@ -19,7 +19,7 @@ library(dplyr)
 library(knitr)
 ```
 
-## **Introduction**{-}
+## Introduction{-}
 Clinical visit data was collected from 150 subjects aged between 60 and 96. Data collected included the subjects age, gender, years of education and socioeconomic status (assessed by the Hollingshead Index of Social Position). Each subject underwent MRIs on at least two separate visits (over one year apart) in order to assess estimated intracranial volume and normalised whole brain volume. They were also given a score at each visit for the Mini-Mental State Examination (MMSE), that is used in clinical practise to measure cognitive impairment, and were given a Clinical Dementia Rating. 
 
 The Clinical Dementia Rating (CDR) is a global rating device, first introduced in 1982. It is calculated on the basis of testing six cognitive and behavioural domains such as memory, orientation, judgment, problem solving, community affairs, home and hobbies and personal care. It is based on a five point scale of 0-3; 0 = no dementia, 0.5 = questionable dementia, 1 = mild cognitive impairment/ mild dementia, 2 = moderate cognitive impairment/ moderate dementia and 3 = severe cognitive impairment/ severe dementia [@Morris1997].
@@ -28,3 +28,23 @@ The analysis performed here will combine the patient and clinical visit data and
 
 Analysis was conducted in R [@Rbase] using Rmarkdown [@Allaire2020; @Xie2018; @Xie2020]
 
+## Data Import{-}
+
+## Data Tidying{-}
+
+## LDA{-}
+
+## Random Forest{-}
+
+## Conclusion{-}
+```{r wordcount}
+###DO I NEED TO KEEP THIS LINE OF CODE IN...
+devtools::install_github("benmarwick/wordcountaddin", type = "source")
+
+
+wordcount <- wordcountaddin::word_count("dementia.Rmd")
+#current wordcount is 256
+```
+**Wordcount:** `r wordcount`
+
+## References{-}
