@@ -40,9 +40,11 @@ visit <- read_excel("data_raw/visit_data.xlsx")
 
 Clinical visit data and patient data were stored in two separate Excel spreadsheets. These were read into R separately so that (?????) they could first be tidied separately. This is necessary as there are only 150 observations in the patient data, whereas there are 373 observations in the visit data, as each patient had 2 or 3 separate MRI scans.
 
+<!-- MAKE THIS SOUND BETTER -->
+
 ## Data Tidying{-}
 
-```{r data tidy}
+```{r data tidy, include = FALSE}
 
 #Change the headings in patient data to a tidy format
 #look at existing column names
@@ -59,7 +61,18 @@ colnames(visit)
 #create and assign new column names
 colnames_visit <- c("subject_ID", "MRI_number", "visit", "age", "MMSE_score", "CDR", "intracranial_volume", "whole_brain_volume", "atlas_scaling_factor")
 names(visit) <- colnames_visit
+
+#Join the patient data and visit data tables together using inner join. this function compared to others (do a google) enables you to duplicate the patient data rows to joing together based on subject id. you can multiply the patient data so same no obs.
+dementia <- inner_join(patient, visit, by = "subject_ID", copy = FALSE, suffix = c(".x", ".y"))
+
+#What do with NAs in the SES column?
+
+#Make the subject IDs a bit nicer?
+
 ```
+<!-- Write about what you did here and why? What specific functions and why those ones not others? -->
+
+## Data summary{-}
 
 
 ## LDA{-}
