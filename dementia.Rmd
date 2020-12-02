@@ -51,7 +51,7 @@ Clinical visit data and patient data were stored in two separate Excel spreadshe
 colnames(patient)
 
 #create and assign new column names
-colnames_patient <- c("subject_ID", "group", "sex", "EDUC", "SES")
+colnames_patient <- c("subject_ID", "group", "sex", "years_of_education", "socioeconomic_status")
 names(patient) <- colnames_patient
 
 #Change headings in the visit data to more meaningful names and to a tidy format
@@ -65,7 +65,26 @@ names(visit) <- colnames_visit
 #Join the patient data and visit data tables together using inner join. this function compared to others (do a google) enables you to duplicate the patient data rows to joing together based on subject id. you can multiply the patient data so same no obs.
 dementia <- inner_join(patient, visit, by = "subject_ID", copy = FALSE, suffix = c(".x", ".y"))
 
-#What do with NAs in the SES column?
+#Several subjects do not have a score for socioeconomic status. As I am doing machine learning and want to determine whether we can predict CDR from the different variables I need each variable to have a value for every subject. 
+#Hence need to remove NAs
+
+#Determine if there are any NA values
+any(is.na(dementia))
+#Output is true - this shows me that somewhere in the dataframe there are NA values. 
+which(is.na(dementia))
+#This shows me that there are 21 observations that have an NA value for one of the variables
+#From a quick scan through the dataset I suspect that the missing values are in the socioeconomic status column. 
+which(is.na(dementia$socioeconomic_status))
+#I can see that 19 of the NAs are in the socioeconomic status column. 
+#The other two were found to be in MMSE score
+which(is.na(dementia$MMSE_score))
+
+#We want to remove all the observations which contain an NA value for one or more variables
+dementia2 <- na.omit(dementia)
+#Now have only 354 not 373 observations
+
+which(is.na(dementia2))
+#Proves that there are no more NA values in the dataset
 
 #Make the subject IDs a bit nicer?
 
@@ -74,7 +93,7 @@ dementia <- inner_join(patient, visit, by = "subject_ID", copy = FALSE, suffix =
 
 ## Data summary{-}
 
-
+<!-- when you do the machine learning - do not include visit number! That is not a determining factor??? -->
 ## LDA{-}
 
 ## Random Forest{-}
