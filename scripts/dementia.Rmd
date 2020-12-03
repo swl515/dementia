@@ -80,23 +80,13 @@ which(is.na(dementia$socioeconomic_status))
 which(is.na(dementia$MMSE_score))
 
 #We want to remove all the observations which contain an NA value for one or more variables
-dementia_no_na <- na.omit(dementia)
+dementia2 <- na.omit(dementia)
 #Now have only 354 not 373 observations
 
-which(is.na(dementia_no_na))
+which(is.na(dementia2))
 #Proves that there are no more NA values in the dataset
 
 #Make the subject IDs a bit nicer?
-
-#Extract one observation/subject ID to work with 
-one_subject_ID <- dementia_no_na$subject_ID[1]
-
-one_subject_ID
-
-one_subject_ID %>% 
-  str_replace("OAS2_0", "")
-
-#Apply to the whole column
 
 ```
 <!-- Write about what you did here and why? What specific functions and why those ones not others? -->
@@ -110,7 +100,11 @@ one_subject_ID %>%
 
 ## Conclusion{-}
 ```{r wordcount}
-wordcount <- wordcountaddin::word_count("scripts/dementia.Rmd")
+###DO I NEED TO KEEP THIS LINE OF CODE IN...
+devtools::install_github("benmarwick/wordcountaddin", type = "source")
+
+
+wordcount <- wordcountaddin::word_count("dementia.Rmd")
 #current wordcount is 256
 ```
 **Wordcount:** `r wordcount`
