@@ -38,9 +38,14 @@ patient <- read_excel("data_raw/patient_data.xlsx")
 visit <- read_excel("data_raw/visit_data.xlsx")
 ```
 
-Clinical visit data and patient data were stored in two separate Excel spreadsheets. These were read into R separately so that (?????) they could first be tidied separately. This is necessary as there are only 150 observations in the patient data, whereas there are 373 observations in the visit data, as each patient had 2 or 3 separate MRI scans.
+Clinical visit data and patient data were stored in two separate Excel spreadsheets. The two spread sheets were read into R separately. This was necessary as the visit data and patient data have different numbers of observations. There were 150 participants in the study (hence 150 observations for patient data) however each patient had multiple MRI scans on separate visits, so there are 373 observations in the visit data. 
 
-<!-- MAKE THIS SOUND BETTER -->
+<!-- do I need to show the two data sets str for a visual representation of this? -->
+```{r visit and patient structure, include = TRUE}
+
+str(patient)
+str(visit)
+```
 
 ## Data Tidying{-}
 
@@ -103,9 +108,12 @@ dementia_no_na$subject_ID %>%
 dementia_tidy <- dementia_no_na %>% 
   mutate(subject_ID = subject_ID %>% 
            str_replace("OAS2_0", ""))
-
 ```
 <!-- Write about what you did here and why? What specific functions and why those ones not others? -->
+
+The column names in both dataframes are not in a tidy format. **show this here?** Using the `names()` function, the column names can be replaced by tidier names in snake_case. 
+The visit and patient data were read in as two separate files as they have different amounts of variables. There are a number of different functions which can be used to join two dataframes together ("x" and "y") by a specified join column, which is present in both dataframes. The `inner_join()` function produces a combination dataframe of the two dataframes provided to it based on a specified column, here subject_ID. **why subject ID**. The `inner_join()` function creates a dataframe which includes all the rows from dataframes x and y, therefore enables you to join two dataframes with different numbers of observations. If one dataframe (x) has less rows then these rows will be duplicated based on the observations in the join column??? Other functions such as `left_join()` and `right_join()` will only keep the rows from either x or y and any extra rows will be deleted. 
+
 
 ## Data summary{-}
 
