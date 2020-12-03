@@ -81,7 +81,6 @@ which(is.na(dementia$MMSE_score))
 
 #We want to remove all the observations which contain an NA value for one or more variables
 dementia_no_na <- na.omit(dementia)
-#Now have only 354 not 373 observations
 
 which(is.na(dementia_no_na))
 #Proves that there are no more NA values in the dataset
@@ -97,6 +96,13 @@ one_subject_ID %>%
   str_replace("OAS2_0", "")
 
 #Apply to the whole column
+
+dementia_no_na$subject_ID %>% 
+  str_replace("OAS2_0", "")
+
+dementia_tidy <- dementia_no_na %>% 
+  mutate(subject_ID = subject_ID %>% 
+           str_replace("OAS2_0", ""))
 
 ```
 <!-- Write about what you did here and why? What specific functions and why those ones not others? -->
