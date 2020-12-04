@@ -468,6 +468,7 @@ summary {
 ## [16] 1850 1851 1852 1853 3342 3343</code></pre>
 <p><strong>do i need this bit??</strong>
 When the <code>str()</code> function is applied to the patient data, it is clear that a number of the NA values are in the socioeconomic status column. It can be determined using <code>which(is.na(dementia$socioeconomic_status))</code> that there are 19 NA values within this column. It is unclear where the other NA values are. <code>na.omit()</code> is used to remove any rows with missing values. It is important to remove any missing values in order to not interfere with the analysis. Other functions predict what the NA values would be and replace them but this is not possible here.</p>
+<p>The IDs of the subjects are in a format used in the clinic. This format is unnecessary in this analysis and could overcomplicate any summary statistics and visual representations of the data. The subject IDs can be tidied by removing the “OAS2_0” in order to leave a simple three digit number. <code>str_replace()</code> is used to replace matched patterns in a string of characters, so can be used to replace “OAS2_0” with nothing (&quot;&quot;). Due to the large number of observations, <code>str_replace()</code> is first used on a single observation to check whether this works! This can then be applied to all the observations in the column using the <code>mutate()</code> function.</p>
 </div>
 <div id="data-summary" class="section level2 unnumbered">
 <h2>Data summary</h2>

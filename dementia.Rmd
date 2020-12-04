@@ -102,9 +102,6 @@ one_subject_ID %>%
 
 #Apply to the whole column
 
-dementia_no_na$subject_ID %>% 
-  str_replace("OAS2_0", "")
-
 dementia_tidy <- dementia_no_na %>% 
   mutate(subject_ID = subject_ID %>% 
            str_replace("OAS2_0", ""))
@@ -124,6 +121,8 @@ which(is.na(dementia))
 **do i need this bit??**
 When the `str()` function is applied to the patient data, it is clear that a number of the NA values are in the socioeconomic status column. It can be determined using `which(is.na(dementia$socioeconomic_status))` that there are 19 NA values within this column. It is unclear where the other NA values are. `na.omit()` is used to remove any rows with missing values. It is important to remove any missing values in order to not interfere with the analysis. Other functions predict what the NA values would be and replace them but this is not possible here. 
 
+The IDs of the subjects are in a format used in the clinic. This format is unnecessary in this analysis and could overcomplicate any summary statistics and visual representations of the data. The subject IDs can be tidied by removing the "OAS2_0" in order to leave a simple three digit number. `str_replace()` is used to replace matched patterns in a string of characters, so can be used to replace "OAS2_0" with nothing (""). Due to the large number of observations, `str_replace()` is first used on a single observation to check whether this works! This can then be applied to all the observations in the column using the `mutate()` function. 
+
 
 ## Data summary{-}
 
@@ -133,6 +132,8 @@ When the `str()` function is applied to the patient data, it is clear that a num
 ## Random Forest{-}
 
 ## Conclusion{-}
+
+**WHY IS THIS NOT WORKING AAAAAA**
 ```{r wordcount}
 wordcount <- wordcountaddin::word_count("scripts/dementia.Rmd")
 #current wordcount is ??
