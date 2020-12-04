@@ -18,14 +18,17 @@ library(magrittr)
 library(dplyr)
 library(knitr)
 library(readxl)
+library(caret)
+library(GGally)
+
 ```
 
 ## Introduction{-}
-Clinical visit data was collected from 150 subjects aged between 60 and 96. Data collected included the subjects age, gender, years of education and socioeconomic status (assessed by the Hollingshead Index of Social Position). Each subject underwent MRIs on at least two separate visits (over one year apart) in order to assess estimated intracranial volume and normalised whole brain volume. They were also given a score at each visit for the Mini-Mental State Examination (MMSE), that is used in clinical practise to measure cognitive impairment, and were given a Clinical Dementia Rating. 
+Clinical visit data was collected from 150 subjects aged between 60 and 96. Data collected included the subjects age, gender, years of education and socioeconomic status (assessed by the Hollingshead Index of Social Position). Each subject underwent MRIs on at least two separate visits (over one year apart) in order to assess estimated intracranial volume and normalised whole brain volume. They were also given a score at each visit for the Mini-Mental State Examination (MMSE), that is used in clinical practice to measure cognitive impairment, and were given a Clinical Dementia Rating. 
 
 The Clinical Dementia Rating (CDR) is a global rating device, first introduced in 1982. It is calculated on the basis of testing six cognitive and behavioural domains such as memory, orientation, judgment, problem solving, community affairs, home and hobbies and personal care. It is based on a five point scale of 0-3; 0 = no dementia, 0.5 = questionable dementia, 1 = mild cognitive impairment/ mild dementia, 2 = moderate cognitive impairment/ moderate dementia and 3 = severe cognitive impairment/ severe dementia [@Morris1997].
 
-The analysis performed here will combine the patient and clinical visit data and tidy this into a format suitable for analysis. Then I aim to determine whether Clinical Dementia Rating can be predicted based on a number of other factors (SAY WHAT THESE ARE!!) using supervised methods of machine learning. I will also assess which machine learning method is able to most accurately predict CDR. 
+The analysis performed here will combine the patient and clinical visit data and tidy this into a format suitable for analysis. Then I aim to determine whether Clinical Dementia Rating can be predicted based on a number of other factors **(SAY WHAT THESE ARE!!)** using supervised methods of machine learning. I will also assess which machine learning method is able to most accurately predict CDR. 
 
 Analysis was conducted in R [@Rbase] using Rmarkdown [@Allaire2020; @Xie2018; @Xie2020]
 
@@ -126,8 +129,94 @@ The IDs of the subjects are in a format used in the clinic. This format is unnec
 
 ## Data summary{-}
 
-<!-- when you do the machine learning - do not include visit number! That is not a determining factor??? -->
+<!-- generate some kind of summary stats!! Maybe plots of the data? -->
+
 ## LDA{-}
+
+Brief description of LDA blah blah blah
+
+```{r LDA}
+
+#Create a vector of row numbers to split the datset into training and testing sets
+ids <- createDataPartition(y = dementia_tidy$CDR,
+                           p = 0.75, 
+                           list = FALSE)
+
+#use dlpyr function to slice rows based on their index and create the two data sets
+train <- dementia_tidy %>% slice(ids)
+test <- dementia_tidy %>% slice(-ids)
+
+#Peform the LDA on the training data
+lda <- train %>% 
+  select(years_of_education,
+         socioeconomic_status,
+         age,
+         MMSE_score,
+         intracranial_volume,
+         whole_brain_volume, 
+         atlas_scaling_factor) %>% 
+  MASS::lda(grouping = train$CDR)
+
+#Predict on the training data
+plda_train <- train %>% 
+  select(years_of_education,
+         socioeconomic_status,
+         age,
+         MMSE_score,
+         intracranial_volume,
+         whole_brain_volume, 
+         atlas_scaling_factor) %>% 
+  predict(object = lda)
+
+#examine the confusion matrix...
+confusionMatrix(plda_train$class,
+                factor(train$CDR))
+
+#Accuracy is only 72.56%. Can be 95% certain that this lies between 66.77% and 77.83%. This is significantly better than by predicting the most common class. 
+
+#Predict classes of test data based on LDA model
+plda_test <- test %>% 
+  select(years_of_education,
+         socioeconomic_status,
+         age,
+         MMSE_score,
+         intracranial_volume,
+         whole_brain_volume, 
+         atlas_scaling_factor) %>% 
+  predict(object = lda)
+
+#Examine the confusion matrix
+confusionMatrix(plda_test$class,
+                factor(test$CDR))
+#Accuracy is 77.27%. 95% confidence that it is between 67.11% and 85.53%. This again, is significantly better than simply predicting the most common class. 
+
+#TO PLOT...
+
+#Extract scores from training set 
+lda_labelled_train <- data.frame(plda_train$x,
+                                  CDR = train$CDR)
+#extract the scores from test set
+lda_labelled_test <- data.frame(plda_test$x,
+                                CDR = test$CDR)
+```
+
+```{r LDA-train, fig.cap="plot of LDA training set}
+lda_labelled_train %>% 
+  ggplot(aes(x = LD1, y = LD2, color = factor(CDR))) +
+  geom_point()
+
+#There is a fair bit of overlap between the different CDRs here. 
+```
+
+```{r LDA-test, fig.cap="plot of LDA test set"}
+
+lda_labelled_test %>% 
+  ggplot(aes(x = LD1, y = LD2, color = factor(CDR)))+
+  geom_point()
+
+#separates out a bit better. 
+```
+<!-- These can now be written about and cross-referenced! -->
 
 ## Random Forest{-}
 
