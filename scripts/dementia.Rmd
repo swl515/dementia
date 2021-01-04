@@ -18,14 +18,17 @@ library(magrittr)
 library(dplyr)
 library(knitr)
 library(readxl)
+library(caret)
+library(GGally)
+
 ```
 
 ## Introduction{-}
-Clinical visit data was collected from 150 subjects aged between 60 and 96. Data collected included the subjects age, gender, years of education and socioeconomic status (assessed by the Hollingshead Index of Social Position). Each subject underwent MRIs on at least two separate visits (over one year apart) in order to assess estimated intracranial volume and normalised whole brain volume. They were also given a score at each visit for the Mini-Mental State Examination (MMSE), that is used in clinical practise to measure cognitive impairment, and were given a Clinical Dementia Rating. 
+Clinical visit data was collected from 150 subjects aged between 60 and 96. Data collected included the subjects age, gender, years of education and socioeconomic status (assessed by the Hollingshead Index of Social Position). Each subject underwent MRIs on at least two separate visits (over one year apart) in order to assess estimated intracranial volume and normalised whole brain volume. They were also given a score at each visit for the Mini-Mental State Examination (MMSE), that is used in clinical practice to measure cognitive impairment, and were given a Clinical Dementia Rating. 
 
 The Clinical Dementia Rating (CDR) is a global rating device, first introduced in 1982. It is calculated on the basis of testing six cognitive and behavioural domains such as memory, orientation, judgment, problem solving, community affairs, home and hobbies and personal care. It is based on a five point scale of 0-3; 0 = no dementia, 0.5 = questionable dementia, 1 = mild cognitive impairment/ mild dementia, 2 = moderate cognitive impairment/ moderate dementia and 3 = severe cognitive impairment/ severe dementia [@Morris1997].
 
-The analysis performed here will combine the patient and clinical visit data and tidy this into a format suitable for analysis. Then I aim to determine whether Clinical Dementia Rating can be predicted based on a number of other factors (SAY WHAT THESE ARE!!) using supervised methods of machine learning. I will also assess which machine learning method is able to most accurately predict CDR. 
+The analysis performed here will combine the patient and clinical visit data and tidy this into a format suitable for analysis. Then I aim to determine whether Clinical Dementia Rating can be predicted based on a number of other factors **(SAY WHAT THESE ARE!!)** using supervised methods of machine learning. I will also assess which machine learning method is able to most accurately predict CDR. 
 
 Analysis was conducted in R [@Rbase] using Rmarkdown [@Allaire2020; @Xie2018; @Xie2020]
 
@@ -38,9 +41,14 @@ patient <- read_excel("data_raw/patient_data.xlsx")
 visit <- read_excel("data_raw/visit_data.xlsx")
 ```
 
-Clinical visit data and patient data were stored in two separate Excel spreadsheets. These were read into R separately so that (?????) they could first be tidied separately. This is necessary as there are only 150 observations in the patient data, whereas there are 373 observations in the visit data, as each patient had 2 or 3 separate MRI scans.
+Clinical visit data and patient data were stored in two separate Excel spreadsheets. The two spread sheets were read into R separately. This was also necessary as the visit data and patient data have different numbers of observations. There were 150 participants in the study (hence 150 observations for patient data) however each patient had multiple MRI scans on separate visits, so there are 373 observations in the visit data. 
 
-<!-- MAKE THIS SOUND BETTER -->
+<!-- do I need to show the two data sets str for a visual representation of this? -->
+```{r visit and patient structure, include = TRUE}
+
+str(patient)
+str(visit)
+```
 
 ## Data Tidying{-}
 
@@ -65,6 +73,21 @@ names(visit) <- colnames_visit
 #Join the patient data and visit data tables together using inner join. this function compared to others (do a google) enables you to duplicate the patient data rows to joing together based on subject id. you can multiply the patient data so same no obs.
 dementia <- inner_join(patient, visit, by = "subject_ID", copy = FALSE, suffix = c(".x", ".y"))
 
+#MAKE SUBJECT ID NAMES NICER
+#Extract one observation/subject ID to work with 
+one_subject_ID <- dementia_no_na$subject_ID[1]
+
+one_subject_ID
+
+one_subject_ID %>% 
+  str_replace("OAS2_0", "")
+
+#Apply to the whole column
+
+dementia_tidy <- dementia_no_na %>% 
+  mutate(subject_ID = subject_ID %>% 
+           str_replace("OAS2_0", ""))
+
 #Several subjects do not have a score for socioeconomic status. As I am doing machine learning and want to determine whether we can predict CDR from the different variables I need each variable to have a value for every subject. 
 #Hence need to remove NAs
 
@@ -80,32 +103,128 @@ which(is.na(dementia$socioeconomic_status))
 which(is.na(dementia$MMSE_score))
 
 #We want to remove all the observations which contain an NA value for one or more variables
-dementia2 <- na.omit(dementia)
-#Now have only 354 not 373 observations
+dementia_no_na <- na.omit(dementia)
 
-which(is.na(dementia2))
+which(is.na(dementia_no_na))
 #Proves that there are no more NA values in the dataset
-
-#Make the subject IDs a bit nicer?
 
 ```
 <!-- Write about what you did here and why? What specific functions and why those ones not others? -->
 
+The column names in both dataframes are not in a tidy format. **show this here?** Using the `names()` function, the column names can be replaced by tidier names in snake_case. 
+
+The visit and patient data were read in as two separate files as they have different amounts of variables. There are a number of different functions which can be used to join two dataframes ("x" and "y") together by a specified join column, which is present in both dataframes. The `inner_join()` function produces a combination dataframe of the dataframes provided to it based on a specified column. In this case the chosen join column was subject_ID as this is our **explanatory variable**. The `inner_join()` function creates a dataframe which retains all the rows from dataframes x and y, therefore enables you to join two dataframes with different numbers of observations. If one dataframe (x) has less rows than the other (y) the rows in x will be duplicated based on the observations in the join column. In this case, patient data rows are duplicated for every set of visit data from that patient. Other functions such as `left_join()` and `right_join()` will only keep the rows from either x or y and any extra rows will be deleted. These functions were not used here as it is important to maintain all the visit data. 
+
+The IDs of the subjects in this dataframe are in a format used in the clinic. This format is unnecessary for this analysis and could overcomplicate any summary statistics and visual representations of the data. The subject IDs can be tidied by removing the "OAS2_0" in order to leave a simple three digit number. `str_replace()` is used to replace matched patterns in a string of characters, so can be used to replace "OAS2_0" with nothing (""). Due to the large number of observations, `str_replace()` is first applied a single observation to check whether the function is able to do what is needed. The function can then be applied to all the observations in the column using the `mutate()` function. 
+
+From a quick scan of the data upon import it is clear that there are a number of NA values. NA values within dataframes are detected using the `is.na()` function. The output of this function is a list of every row and a TRUE/FALSE indicator of NA values. Unfortunately this function has a max print limit and due to the large size of this dataset, 297 rows are omited from the output. It is for this reason that the `any(is.na())` and `which(is.na())` functions are used. `any(is.na())` provides a simple output of TRUE or FALSE based on whether or not missing values are present within the dataframe. `which(is.na())` determines what positions in the dataframe the NA values are; the output of which can be seen below. From this one is able to see that there are 21 missing values within the dataframe. 
+
+```{r NA values, include = TRUE}
+which(is.na(dementia))
+```
+
+When the `str()` function is applied to the patient data, it is clear that a number of the NA values are in the socioeconomic status column. It can be determined using `which(is.na(dementia$socioeconomic_status))` that there are 19 NA values within this column. It is unclear where the other NA values are. `na.omit()` is used to remove any rows with missing values. It is important to remove any missing values in order to not interfere with the analysis. Other functions exist that can predict what the NA values would be and replace them in the dataframe but this is not possible here as there is no data to predict the values from. 
+
+
 ## Data summary{-}
 
-<!-- when you do the machine learning - do not include visit number! That is not a determining factor??? -->
+<!-- generate some kind of summary stats!! Maybe plots of the data? -->
+
 ## LDA{-}
+
+Brief description of LDA blah blah blah
+
+```{r LDA}
+
+#Create a vector of row numbers to split the datset into training and testing sets
+ids <- createDataPartition(y = dementia_tidy$CDR,
+                           p = 0.75, 
+                           list = FALSE)
+
+#use dlpyr function to slice rows based on their index and create the two data sets
+train <- dementia_tidy %>% slice(ids)
+test <- dementia_tidy %>% slice(-ids)
+
+#Peform the LDA on the training data
+lda <- train %>% 
+  select(years_of_education,
+         socioeconomic_status,
+         age,
+         MMSE_score,
+         intracranial_volume,
+         whole_brain_volume, 
+         atlas_scaling_factor) %>% 
+  MASS::lda(grouping = train$CDR)
+
+#Predict on the training data
+plda_train <- train %>% 
+  select(years_of_education,
+         socioeconomic_status,
+         age,
+         MMSE_score,
+         intracranial_volume,
+         whole_brain_volume, 
+         atlas_scaling_factor) %>% 
+  predict(object = lda)
+
+#examine the confusion matrix...
+confusionMatrix(plda_train$class,
+                factor(train$CDR))
+
+#Accuracy is only 72.56%. Can be 95% certain that this lies between 66.77% and 77.83%. This is significantly better than by predicting the most common class. 
+
+#Predict classes of test data based on LDA model
+plda_test <- test %>% 
+  select(years_of_education,
+         socioeconomic_status,
+         age,
+         MMSE_score,
+         intracranial_volume,
+         whole_brain_volume, 
+         atlas_scaling_factor) %>% 
+  predict(object = lda)
+
+#Examine the confusion matrix
+confusionMatrix(plda_test$class,
+                factor(test$CDR))
+#Accuracy is 77.27%. 95% confidence that it is between 67.11% and 85.53%. This again, is significantly better than simply predicting the most common class. 
+
+#TO PLOT...
+
+#Extract scores from training set 
+lda_labelled_train <- data.frame(plda_train$x,
+                                  CDR = train$CDR)
+#extract the scores from test set
+lda_labelled_test <- data.frame(plda_test$x,
+                                CDR = test$CDR)
+```
+
+```{r LDA-train, fig.cap="plot of LDA training set}
+lda_labelled_train %>% 
+  ggplot(aes(x = LD1, y = LD2, color = factor(CDR))) +
+  geom_point()
+
+#There is a fair bit of overlap between the different CDRs here. 
+```
+
+```{r LDA-test, fig.cap="plot of LDA test set"}
+
+lda_labelled_test %>% 
+  ggplot(aes(x = LD1, y = LD2, color = factor(CDR)))+
+  geom_point()
+
+#separates out a bit better. 
+```
+<!-- These can now be written about and cross-referenced! -->
 
 ## Random Forest{-}
 
 ## Conclusion{-}
+
+**WHY IS THIS NOT WORKING AAAAAA**
 ```{r wordcount}
-###DO I NEED TO KEEP THIS LINE OF CODE IN...
-devtools::install_github("benmarwick/wordcountaddin", type = "source")
-
-
-wordcount <- wordcountaddin::word_count("dementia.Rmd")
-#current wordcount is 256
+wordcount <- wordcountaddin::word_count("scripts/dementia.Rmd")
+#current wordcount is ??
 ```
 **Wordcount:** `r wordcount`
 
