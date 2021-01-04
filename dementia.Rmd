@@ -202,10 +202,14 @@ lda_labelled_test <- data.frame(plda_test$x,
                                 CDR = test$CDR)
 ```
 
-```{r LDA-train, fig.cap="plot of LDA training set}
+```{r LDA-train, fig.cap="plot of LDA training set"}
+
+source("scripts/theme_stella.R")
+
 lda_labelled_train %>% 
   ggplot(aes(x = LD1, y = LD2, color = factor(CDR))) +
-  geom_point()
+  geom_point() +
+  theme_stella()
 
 #There is a fair bit of overlap between the different CDRs here. 
 ```
