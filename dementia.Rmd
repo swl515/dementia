@@ -20,6 +20,7 @@ library(knitr)
 library(readxl)
 library(caret)
 library(GGally)
+library(ROCR)
 
 ```
 
@@ -83,10 +84,9 @@ dementia <- inner_join(patient, visit, by = "subject_ID", copy = FALSE, suffix =
 The IDs of the subjects in this dataframe are in a format used in the clinic. This format is unnecessary for this analysis and could overcomplicate any summary statistics and visual representations of the data. The subject IDs can be tidied by removing the "OAS2_0" in order to leave a simple three digit number. `str_replace()` is used to replace matched patterns in a string of characters, so can be used to replace "OAS2_0" with nothing (""). Due to the large number of observations, `str_replace()` is first applied a single observation to check whether the function peforms the necessary task correctly. The function can then be applied to all the observations in the column using the `mutate()` function. 
 
 ```{r subject IDs, include = FALSE}
-#MAKE SUBJECT ID NAMES NICER
 
 #Extract one observation/subject ID to work with 
-one_subject_ID <- dementia_no_na$subject_ID[1]
+one_subject_ID <- dementia$subject_ID[1]
 
 one_subject_ID
 
@@ -94,7 +94,7 @@ one_subject_ID %>%
   str_replace("OAS2_0", "")
 
 #Apply to the whole column
-dementia_tidy <- dementia_no_na %>% 
+dementia_tidy <- dementia %>% 
   mutate(subject_ID = subject_ID %>% 
            str_replace("OAS2_0", ""))
 ```
@@ -102,7 +102,7 @@ dementia_tidy <- dementia_no_na %>%
 From a quick scan of the data upon import it is clear that there are a number of NA values. NA values within dataframes are detected using the `is.na()` function. The output of this function is a list of every row and a TRUE/FALSE indicator of NA values. Unfortunately this function has a max print limit and due to the large size of this dataset, 297 rows are omited from the output. It is for this reason that the `any(is.na())` and `which(is.na())` functions are used. `any(is.na())` provides a simple output of TRUE or FALSE based on whether or not missing values are present within the dataframe. `which(is.na())` determines what positions in the dataframe the NA values are; the output of which can be seen below. From this, one is able to see that there are 21 missing values within the dataframe. 
 
 ```{r NA values, include = TRUE}
-which(is.na(dementia))
+which(is.na(dementia_tidy))
 ```
 
 When the `str()` function is applied to the patient data, it is clear that a number of the NA values are in the socioeconomic status column. It can be determined using `which(is.na(dementia$socioeconomic_status))` that there are 19 NA values within this column. It is unclear where the other NA values are. `na.omit()` is used to remove any rows with missing values. It is important to remove any missing values in order to not interfere with the analysis. Other functions exist that can predict what the NA values would be and replace them in the dataframe but this is not possible here as socioeconomic status is an independent variable here and cannot be predicted from the data we have. 
@@ -112,18 +112,18 @@ When the `str()` function is applied to the patient data, it is clear that a num
 #Hence need to remove NAs
 
 #Determine if there are any NA values
-any(is.na(dementia))
+any(is.na(dementia_tidy))
 #Output is true - this shows me that somewhere in the dataframe there are NA values. 
-which(is.na(dementia))
+which(is.na(dementia_tidy))
 #This shows me that there are 21 observations that have an NA value for one of the variables
 #From a quick scan through the dataset I suspect that the missing values are in the socioeconomic status column. 
-which(is.na(dementia$socioeconomic_status))
+which(is.na(dementia_tidy$socioeconomic_status))
 #I can see that 19 of the NAs are in the socioeconomic status column. 
 #The other two were found to be in MMSE score
-which(is.na(dementia$MMSE_score))
+which(is.na(dementia_tidy$MMSE_score))
 
 #We want to remove all the observations which contain an NA value for one or more variables
-dementia_no_na <- na.omit(dementia)
+dementia_no_na <- na.omit(dementia_tidy)
 
 which(is.na(dementia_no_na))
 #Proves that there are no more NA values in the dataset
@@ -133,20 +133,19 @@ which(is.na(dementia_no_na))
 
 <!-- generate some kind of summary stats!! Maybe plots of the data? -->
 
-## LDA{-}
+## Linear Discriminant Analysis{-}
 
 Linear Discriminant Analysis can 
 
-```{r LDA}
-
-#Create a vector of row numbers to split the datset into training and testing sets
-ids <- createDataPartition(y = dementia_tidy$CDR,
+```{r LDA, include = FALSE}
+#Create a vector of row numbers to split the dataset into training and testing sets
+ids <- createDataPartition(y = dementia_no_na$CDR,
                            p = 0.75, 
                            list = FALSE)
 
 #use dlpyr function to slice rows based on their index and create the two data sets
-train <- dementia_tidy %>% slice(ids)
-test <- dementia_tidy %>% slice(-ids)
+train <- dementia_no_na %>% slice(ids)
+test <- dementia_no_na %>% slice(-ids)
 
 #Train the model
 lda <- train %>% 
@@ -190,6 +189,8 @@ plda_test <- test %>%
 #Examine the confusion matrix
 confusionMatrix(plda_test$class,
                 factor(test$CDR))
+
+##HELP!!!!!!!!
 #Accuracy is 77.27%. 95% confidence that it is between 67.11% and 85.53%. This again, is significantly better than simply predicting the most common class. 
 
 #TO PLOT...
@@ -218,7 +219,8 @@ lda_labelled_train %>%
 
 lda_labelled_test %>% 
   ggplot(aes(x = LD1, y = LD2, color = factor(CDR))) +
-  geom_point()
+  geom_point() +
+  theme_stella()
 
 #separates out a bit better. 
 ```
@@ -229,23 +231,92 @@ lda_labelled <- rbind(lda_labelled_test, lda_labelled_train)
 
 lda_labelled %>% 
   ggplot(aes(x = LD1, y = LD2, colour = factor(CDR))) +
-  geom_point()
+  geom_point() +
+  theme_stella()
 
 #not very clear distinction, especially at lower CDRs. 
 
-#MAKE THESE FIGURES LOOK BETTER :)
-
 ```
 
-
-
 ## Random Forest{-}
+Random Forests is a machine learning method for classification and regression. They operate by constructing a large number of decision trees from different subsets of the training dataset.  The decision trees are then used to output the class that is the mode of the classes output by each of the individual trees. Random forest overcomes the common problem of overfitting which is encountered with Decision Tree methods. Random Forest is also well suited to a smaller sample size.  
+
+```{r Random Forest, include = FALSE}
+#Set random seed to make results reproducible
+set.seed(17)
+
+#calculate the size of each of the datasets
+data_set_size <- floor(nrow(dementia_no_na)/2)
+
+#generate a random sample of "data_set_size" indexes
+indexes <- sample(1:nrow(dementia_no_na), size = data_set_size)
+
+#Assign the data to the corrext sets
+training <- dementia_no_na[indexes,]
+validation1 <- dementia_no_na[-indexes, ]
+
+#Make dependent variable a factor, in order for random forest to do classification not regression
+dementia_no_na$CDR <- factor(dementia_no_na$CDR)
+
+#Peform the training
+rf <- randomForest::randomForest(formula = CDR~., data = dementia_no_na, ntree = 500, mtry = 3, importance = TRUE)
+
+rf
+
+#write about why you have to randomForest:: because librarying the random forest package overrules some of the functions you need from other packages - check which!! - see listendata ref
+#write about less mtry = reduces correlation and strentgh and increasing it increases both. there is an optimal mtry range. starts with mtry of 3 - sqrt of predictors
+
+#find the optimal mtry value with the minimum out of bag(OOB) error
+
+mtry <- randomForest::tuneRF(dementia_no_na[-1], 
+               dementia_no_na$CDR,
+               ntreeTry = 500,
+               stepFactor = 1.5,
+               improve = 0.01,
+               trace = TRUE, 
+               plot = TRUE)
+best_m <- mtry[mtry[,2] == min(mtry[,2]), 1]
+
+mtry
+best_m
+
+#4 or 6 are the best mtry values
+
+#Use best mtry value
+set.seed(17)
+
+rf <- randomForest::randomForest(formula = CDR~., 
+                                 data = dementia_no_na, 
+                                 ntree = 500, 
+                                 mtry = best_m, 
+                                 importance = TRUE)
+
+print(rf)
+
+#OOB estimate of error rate = 12.43%
+
+#Evaluate the variable importance
+randomForest::importance(rf)
+randomForest::varImpPlot(rf)
+
+#Higher mean decrease accuracy or mean decrease gini score, the higher the importance of this variable in the model. 
+#Here group is highest - need to exclude this. Then MMSE_score is a good predictor of CDR, followed by age, whole brain volume etc etc. Years of education, sex and socioeconomic status have little impact on CDR.  
+
+#Use classifie to see what happens when we use classified to predict classes for validation set
+prediction_for_table <- predict(rf, validation1[,5])
+```
+**NOT WORKING YET LOLS**
+
 
 ## Conclusion{-}
 
 **WHY IS THIS NOT WORKING AAAAAA**
 ```{r wordcount}
-wordcount <- wordcountaddin::word_count("scripts/dementia.Rmd")
+
+install_github("benmarwick/wordcountaddin")
+
+wordcount <- wordcountaddin::word_count("dementia.Rmd")
+wordcount
 #current wordcount is ??
 ```
 **Wordcount:** `r wordcount`
