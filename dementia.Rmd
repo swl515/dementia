@@ -20,8 +20,7 @@ library(knitr)
 library(readxl)
 library(caret)
 library(GGally)
-library(ROCR)
-
+library(randomForest)
 ```
 
 ## Introduction{-}
@@ -42,7 +41,7 @@ patient <- read_excel("data_raw/patient_data.xlsx")
 visit <- read_excel("data_raw/visit_data.xlsx")
 ```
 
-Clinical visit data and patient data were stored in two separate Excel spreadsheets. The two spread sheets, which were read into R separately. This was also necessary as the visit data and patient data had different numbers of observations. There were 150 participants in the study (hence 150 observations for patient data) however each patient had multiple MRI scans on separate visits, so there are 373 observations in the visit data. 
+Clinical visit data and patient data were stored in two separate Excel spreadsheets. The two spreadsheets were read into R separately. It was necessary to do this instead of reading them in together as the visit data and patient data had different numbers of observations. There were 150 participants in the study (hence 150 observations for patient data) however each patient had multiple MRI scans on separate visits, so there are 373 observations in the visit data. 
 
 <!-- do I need to show the two data sets str for a visual representation of this? -->
 ```{r visit and patient structure, include = TRUE}
@@ -105,7 +104,7 @@ From a quick scan of the data upon import it is clear that there are a number of
 which(is.na(dementia_tidy))
 ```
 
-When the `str()` function is applied to the patient data, it is clear that a number of the NA values are in the socioeconomic status column. It can be determined using `which(is.na(dementia$socioeconomic_status))` that there are 19 NA values within this column. It is unclear where the other NA values are. `na.omit()` is used to remove any rows with missing values. It is important to remove any missing values in order to not interfere with the analysis. Other functions exist that can predict what the NA values would be and replace them in the dataframe but this is not possible here as socioeconomic status is an independent variable here and cannot be predicted from the data we have. 
+When the `str()` function is applied to the patient data, it is clear that a number of the NA values are in the socioeconomic status column. It can be determined using `which(is.na(dementia$socioeconomic_status))` that there are 19 NA values within this column. It is unclear where the other NA values are. `na.omit()` is used to remove any rows with missing values. It is important to remove any missing values as they would interfere with the Random Forest and Linear Discriminant Analysis. Other functions exist that can predict what the NA values would be and replace them in the dataframe but this is not possible here as socioeconomic status is an independent variable here and cannot be predicted from the data we have. 
 
 ```{r removing NAs, include = FALSE}
 #Several subjects do not have a score for socioeconomic status. As I am doing machine learning and want to determine whether we can predict CDR from the different variables I need each variable to have a value for every subject. 
@@ -127,6 +126,8 @@ dementia_no_na <- na.omit(dementia_tidy)
 
 which(is.na(dementia_no_na))
 #Proves that there are no more NA values in the dataset
+
+
 ```
 
 ## Data summary{-}
@@ -239,7 +240,8 @@ lda_labelled %>%
 ```
 
 ## Random Forest{-}
-Random Forests is a machine learning method for classification and regression. They operate by constructing a large number of decision trees from different subsets of the training dataset.  The decision trees are then used to output the class that is the mode of the classes output by each of the individual trees. Random forest overcomes the common problem of overfitting which is encountered with Decision Tree methods. Random Forest is also well suited to a smaller sample size.  
+Random Forests is a machine learning method for classification and regression. They operate by constructing a large number of decision trees from different subsets of a training dataset. The decision trees are then used to output the class that is the mode of the classes output by each of the individual trees. Random forest overcomes the common problem of overfitting which is encountered with Decision Tree methods. Random Forest is also well suited to a smaller sample sizes, like the data in this analysis. 
+Random Forest is peformed using the randomForest package (**REF**) however, loading this package using the `library` function masks the `margin` function of dplyr (**REF**) and the `margin` function of ggplot2 (**REF**). It is for this reason double colons are used to access functions from randomForest without loading the package itself. 
 
 ```{r Random Forest, include = FALSE}
 #Set random seed to make results reproducible
@@ -263,7 +265,6 @@ rf <- randomForest::randomForest(formula = CDR~., data = dementia_no_na, ntree =
 
 rf
 
-#write about why you have to randomForest:: because librarying the random forest package overrules some of the functions you need from other packages - check which!! - see listendata ref
 #write about less mtry = reduces correlation and strentgh and increasing it increases both. there is an optimal mtry range. starts with mtry of 3 - sqrt of predictors
 
 #find the optimal mtry value with the minimum out of bag(OOB) error
@@ -302,18 +303,17 @@ randomForest::varImpPlot(rf)
 #Higher mean decrease accuracy or mean decrease gini score, the higher the importance of this variable in the model. 
 #Here group is highest - need to exclude this. Then MMSE_score is a good predictor of CDR, followed by age, whole brain volume etc etc. Years of education, sex and socioeconomic status have little impact on CDR.  
 
-#Use classifie to see what happens when we use classified to predict classes for validation set
-prediction_for_table <- predict(rf, validation1[,5])
 ```
-**NOT WORKING YET LOLS**
+In a Random Forest, the data is first split into imbalanced training and validation datasets.
+<!-- There is a hard limit on the number of features which can be considered within a random forest, as when more features are considered, the data becomes sparse which can lead to overfitting. Ideally you would want e^No of features to be less than the number of observations. Here there are 354 observations meaning a maximum of 6 features can be considered without running the risk of overfitting.  -->
+Random Forest can be used to investigate either regression or classification. As we are looking to investigate whether CDR can be predicted based on the other factors we want to investigate classification. In Random Forest, classification can only be performed if the dependent variable is a factor/ is categorical. Clinical Dementia Rating here is a numerical value which results in a regression model. Hence it is important to make CDR a factor using the `factor`function.
+The number of features used in the construction of each tree (mtry) needs to be optimised to reduce the out of bag (OOB) estimate of error rate. #run code and state which mtry have best OOb adn what it is :)
 
 
 ## Conclusion{-}
 
 **WHY IS THIS NOT WORKING AAAAAA**
 ```{r wordcount}
-
-install_github("benmarwick/wordcountaddin")
 
 wordcount <- wordcountaddin::word_count("dementia.Rmd")
 wordcount
