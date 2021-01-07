@@ -20,7 +20,7 @@ library(knitr)
 library(readxl)
 library(caret)
 library(GGally)
-library(randomForest)
+
 ```
 
 ## Introduction{-}
@@ -98,6 +98,12 @@ dementia_tidy <- dementia %>%
            str_replace("OAS2_0", ""))
 ```
 
+
+```{r}
+dementia_tidy <- dementia_tidy %>% 
+  mutate(CDR_2 = ifelse(CDR > 0, 1, CDR ))
+```
+
 From a quick scan of the data upon import it is clear that there are a number of NA values. NA values within dataframes are detected using the `is.na()` function. The output of this function is a list of every row and a TRUE/FALSE indicator of NA values. Unfortunately this function has a max print limit and due to the large size of this dataset, 297 rows are omited from the output. It is for this reason that the `any(is.na())` and `which(is.na())` functions are used. `any(is.na())` provides a simple output of TRUE or FALSE based on whether or not missing values are present within the dataframe. `which(is.na())` determines what positions in the dataframe the NA values are; the output of which can be seen below. From this, one is able to see that there are 21 missing values within the dataframe. 
 
 ```{r NA values, include = TRUE}
@@ -136,10 +142,11 @@ which(is.na(dementia_no_na))
 
 ## Linear Discriminant Analysis{-}
 
-Linear Discriminant Analysis can 
+Linear Discriminant Analysis (LDA) uses linear combinations of predictors to predict the class of a given observation. The algorith begins by finding directions that maximise the separation between classes and uses these directions to predict the class of individuals. LDA is performed using the `lda` function from the MASS package (**REF**). This package is not loaded, however as loading it masks some features of other packages that are needed. Here LDA is peformed with testing and training. The dataset is split into train and test datasets, using the `createDataPartition` function from the caret package (**REF**). The model is built or 'trained' on the train dataset, which is 75% of the original. Usually the aim of a model is to determine whether specific variables have a significant effect on response. This uses all of the data. However, we cannot be sure that the data we have is generalisable and how well that model would predict responses in a new dataset - this is overfitting. Training the model on 75% of the data, and testing it on the remaining 25% enables us to detect the level of overfitting. If the model performs well on the training set but not on the test set it is likely we are overfitting and it is not a good model. 
 
 ```{r LDA, include = FALSE}
 #Create a vector of row numbers to split the dataset into training and testing sets
+
 ids <- createDataPartition(y = dementia_no_na$CDR,
                            p = 0.75, 
                            list = FALSE)
@@ -157,7 +164,7 @@ lda <- train %>%
          intracranial_volume,
          whole_brain_volume, 
          atlas_scaling_factor) %>% 
-  MASS::lda(grouping = train$CDR)
+  MASS::lda(grouping = train$CDR_2)
 
 #Predict on the training data
 plda_train <- train %>% 
@@ -172,9 +179,9 @@ plda_train <- train %>%
 
 #examine the confusion matrix...
 confusionMatrix(plda_train$class,
-                factor(train$CDR))
+                factor(train$CDR_2))
 
-#Accuracy is only 72.56%. Can be 95% certain that this lies between 66.77% and 77.83%. This is significantly better than by predicting the most common class. 
+#Accuracy is only 74.25%. Can be 95% certain that this lies between 68.58% and 79.38%. This is significantly better than by predicting the most common class. 
 
 #Predict classes of test data based on LDA model
 plda_test <- test %>% 
@@ -189,10 +196,22 @@ plda_test <- test %>%
 
 #Examine the confusion matrix
 confusionMatrix(plda_test$class,
-                factor(test$CDR))
+               factor(test$CDR_2))
+#Does not run - no 2s in test set as too small!!
 
-##HELP!!!!!!!!
-#Accuracy is 77.27%. 95% confidence that it is between 67.11% and 85.53%. This again, is significantly better than simply predicting the most common class. 
+#Test on whole dataset
+plda_whole <- dementia_no_na %>% 
+  select(years_of_education,
+         socioeconomic_status,
+         age,
+         MMSE_score,
+         intracranial_volume,
+         whole_brain_volume, 
+         atlas_scaling_factor) %>% 
+  predict(object = lda)
+
+confusionMatrix(plda_whole,
+                dementia_no_na$CDR)
 
 #TO PLOT...
 
@@ -203,6 +222,7 @@ lda_labelled_train <- data.frame(plda_train$x,
 lda_labelled_test <- data.frame(plda_test$x,
                                 CDR = test$CDR)
 ```
+
 
 ```{r LDA-train, fig.cap="plot of LDA training set"}
 
@@ -263,9 +283,7 @@ dementia_no_na$CDR <- factor(dementia_no_na$CDR)
 #Peform the training
 rf <- randomForest::randomForest(formula = CDR~., data = dementia_no_na, ntree = 500, mtry = 3, importance = TRUE)
 
-rf
-
-#write about less mtry = reduces correlation and strentgh and increasing it increases both. there is an optimal mtry range. starts with mtry of 3 - sqrt of predictors
+print(rf)
 
 #find the optimal mtry value with the minimum out of bag(OOB) error
 
@@ -278,8 +296,8 @@ mtry <- randomForest::tuneRF(dementia_no_na[-1],
                plot = TRUE)
 best_m <- mtry[mtry[,2] == min(mtry[,2]), 1]
 
-mtry
-best_m
+print(mtry)
+print(best_m)
 
 #4 or 6 are the best mtry values
 
@@ -288,7 +306,7 @@ set.seed(17)
 
 rf <- randomForest::randomForest(formula = CDR~., 
                                  data = dementia_no_na, 
-                                 ntree = 500, 
+                                 ntree = 200,
                                  mtry = best_m, 
                                  importance = TRUE)
 
@@ -307,8 +325,9 @@ randomForest::varImpPlot(rf)
 In a Random Forest, the data is first split into imbalanced training and validation datasets.
 <!-- There is a hard limit on the number of features which can be considered within a random forest, as when more features are considered, the data becomes sparse which can lead to overfitting. Ideally you would want e^No of features to be less than the number of observations. Here there are 354 observations meaning a maximum of 6 features can be considered without running the risk of overfitting.  -->
 Random Forest can be used to investigate either regression or classification. As we are looking to investigate whether CDR can be predicted based on the other factors we want to investigate classification. In Random Forest, classification can only be performed if the dependent variable is a factor/ is categorical. Clinical Dementia Rating here is a numerical value which results in a regression model. Hence it is important to make CDR a factor using the `factor`function.
-The number of features used in the construction of each tree (mtry) needs to be optimised to reduce the out of bag (OOB) estimate of error rate. #run code and state which mtry have best OOb adn what it is :)
-
+In a random forest mtry refers to the number of variables used in each tree. The default value for mtry is determined as the square root of the number of predictors in the random forest, which here is 3. However, mtry can take on a range of numbers, and a higher mtry increases both the correlation and strength of the random forest. mtry needs to be optimised to the value which produces the lowest out of bag error rate. Mtry is optimised with the `tuneRF` function which searches for the mtry value with the lowest OOB error estimate.  For this Random Forest, the best values for mtry are 4 or 6 which both have an OOB error rate of 0.847. 
+ntree refers to the number of trees to be generated and again, is optimised to the ntree which produces the lowest OOB error estimate. Here the optimal ntree is 200, which produces a OOB estimate of error rate of 11.86%. 
+Mean Decrease Accuracy and Mean Decrease Gini show how important a variable is in the model - the higher the score, the more important that variable is. Plots of these can be produced using the `importance` and `varImpPlot` functions of the randomForest package. Here the most important variables, and thus the best predictors of a higher clinical dementia rating, are group and MMSE score, which is expected as they both define dementia status based on assessment. Following this age and whole brain volume have the most importance. It is known that dementia is a condition well associated with ageing and that variations in an individuals whole brain volume can impact on their likelihood of developing dementia (**REF**). 
 
 ## Conclusion{-}
 
