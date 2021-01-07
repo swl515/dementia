@@ -54,7 +54,7 @@ str(visit)
 
 The column names in both dataframes are not in a tidy format. **show this here?** Using the `names()` function, the column names can be replaced by tidier names in snake_case. 
 
-```{r data tidy column headings}
+```{r data tidy column headings, include = FALSE}
 
 #Change the headings in patient data to a tidy format
 #look at existing column names
@@ -75,14 +75,14 @@ names(visit) <- colnames_visit
 
 The visit and patient data were read in as two separate files as they have different amounts of variables. There are a number of different functions which can be used to join two dataframes ("x" and "y") together by a specified join column, which is present in both dataframes. The `inner_join()` function produces a combination dataframe of the two dataframes provided to it based on a specified column. In this case the chosen join column was subject_ID we want to combine all the information **for each visit of each subject** in to one row. The `inner_join()` function creates a dataframe which retains all the rows from dataframes x and y, therefore enables you to join two dataframes with different numbers of observations. If one dataframe (x) has less rows than the other (y) the rows in x will be duplicated based on the observations in the join column. In this case, patient data rows are duplicated for every set of visit data from that patient. Other functions such as `left_join()` and `right_join()` will only keep the rows from either x or y and any extra rows will be deleted. These functions were not used here as it is important to maintain all the visit data.  
 
-```{r innerjoin}
+```{r innerjoin, include = FALSE}
 #Join the patient data and visit data tables together using inner join. this function compared to others enables you to duplicate the patient data rows to joing together based on subject id. You can multiply the patient data so same no obs.
 dementia <- inner_join(patient, visit, by = "subject_ID", copy = FALSE, suffix = c(".x", ".y"))
 ```
 
 The IDs of the subjects in this dataframe are in a format used in the clinic. This format is unnecessary for this analysis and could overcomplicate any summary statistics and visual representations of the data. The subject IDs can be tidied by removing the "OAS2_0" in order to leave a simple three digit number. `str_replace()` is used to replace matched patterns in a string of characters, so can be used to replace "OAS2_0" with nothing (""). Due to the large number of observations, `str_replace()` is first applied a single observation to check whether the function peforms the necessary task correctly. The function can then be applied to all the observations in the column using the `mutate()` function. 
 
-```{r subject IDs}
+```{r subject IDs, include = FALSE}
 
 #Extract one observation/subject ID to work with 
 one_subject_ID <- dementia$subject_ID[1]
@@ -99,14 +99,14 @@ dementia_tidy <- dementia %>%
 ```
 
 
-```{r, CDR_2,}
+```{r CDR_2, include = FALSE}
 #Change 2 for 1
 dementia_tidy <- dementia_tidy %>% 
   mutate(CDR_2 = CDR %>% 
            str_replace("2", "1"))
 ```
 
-From a quick scan of the data upon import it is clear that there are a number of NA values. NA values within dataframes are detected using the `is.na()` function. The output of this function is a list of every row and a TRUE/FALSE indicator of NA values. Unfortunately this function has a max print limit and due to the large size of this dataset, 297 rows are omited from the output. It is for this reason that the `any(is.na())` and `which(is.na())` functions are used. `any(is.na())` provides a simple output of TRUE or FALSE based on whether or not missing values are present within the dataframe. `which(is.na())` determines what positions in the dataframe the NA values are; the output of which can be seen below. From this, one is able to see that there are 21 missing values within the dataframe. 
+From a quick scan of the data upon mport it is clear that there are a number of NA values. NA values within dataframes are detected using the `is.na()` function. The output of this function is a list of every row and a TRUE/FALSE indicator of NA values. Unfortunately this function has a max print limit and due to the large size of this dataset, 297 rows are omited from the output. It is for this reason that the `any(is.na())` and `which(is.na())` functions are used. `any(is.na())` provides a simple output of TRUE or FALSE based on whether or not missing values are present within the dataframe. `which(is.na())` determines what positions in the dataframe the NA values are; the output of which can be seen below. From this, one is able to see that there are 21 missing values within the dataframe. 
 
 ```{r NA values, include = TRUE}
 which(is.na(dementia_tidy))
@@ -114,7 +114,7 @@ which(is.na(dementia_tidy))
 
 When the `str()` function is applied to the patient data, it is clear that a number of the NA values are in the socioeconomic status column. It can be determined using `which(is.na(dementia$socioeconomic_status))` that there are 19 NA values within this column. It is unclear where the other NA values are. `na.omit()` is used to remove any rows with missing values. It is important to remove any missing values as they would interfere with the Random Forest and Linear Discriminant Analysis. Other functions exist that can predict what the NA values would be and replace them in the dataframe but this is not possible here as socioeconomic status is an independent variable here and cannot be predicted from the data we have. 
 
-```{r removing NAs}
+```{r removing NAs, include = FALSE}
 #Several subjects do not have a score for socioeconomic status. As I am doing machine learning and want to determine whether we can predict CDR from the different variables I need each variable to have a value for every subject. 
 #Hence need to remove NAs
 
@@ -148,7 +148,7 @@ Linear Discriminant Analysis (LDA) uses linear combinations of predictors to pre
 Clinical dementia rating can take on 4 values - 0, 0.5, 1 and 2 - based on dementia status. In the data used here there are very few scores of 2. Because the test set is only 25% of the original, it has very little chance of containing any 2's. This means the model cannot predict the scores of the test data as the data and its reference (the predictions of the test data) do not have the same levels. It is for this reason that I added a new column to the dementia data. 
 In the CDR scale, 0 = no dementia, 0.5 = questionable dementia, 1 = mild dementia and 2 = moderate dementia. Therefore scores of 1 and 2 can be combined to a score of 1, now representing "dementia". The function `mutate()` is used to create a new column ("CDR_2"), which contains the CDR scores. `str_replace()` is used to replace matched patterns in a string of characters, so can be used to replace "2" with nothing "1".
 
-```{r LDA}
+```{r LDA, include = FALSE}
 #Create a vector of row numbers to split the dataset into training and testing sets
 
 ids <- createDataPartition(y = dementia_no_na$CDR,
@@ -226,6 +226,8 @@ lda_labelled_train %>%
 #There is a fair bit of overlap between the different CDRs here. 
 ```
 
+`ggplot()` can be used to plot LD1 vs LD2 in order to visualise how well the different CDRs separate. When the model is used to predict the classes on the training dataset, the different CDRs do not separate out very well (Figure \@ref(fig:LDA-train)). 
+
 ```{r LDA-test, fig.cap="plot of LDA test set"}
 
 lda_labelled_test %>% 
@@ -235,6 +237,7 @@ lda_labelled_test %>%
 
 #separates out a bit better. 
 ```
+The CDR predictions based on the test dataset separate out a little better (Figure \@ref(fig:LDA-test)), but there is still a large amount of overlap between 0s and 0.5s. Hence, it is likely that the model would predict scores of 0 and 0.5 incorrectly. 
 
 ```{r LDA-both, fig.cap="plot of LDA train and test sets"}
 
@@ -248,12 +251,13 @@ lda_labelled %>%
 #not very clear distinction, especially at lower CDRs. 
 
 ```
+`rbind()` can be used to combine the predictions of the train and test datasets so they can be plotted together (Figure \@ref(fig:LDA-both)). Again, there is a large amount of overlap between the scores of 0 and 0.5. 
 
 ## Random Forest{-}
 Random Forests is a machine learning method for classification and regression. They operate by constructing a large number of decision trees from different subsets of a training dataset. The decision trees are then used to output the class that is the mode of the classes output by each of the individual trees. Random forest overcomes the common problem of overfitting which is encountered with Decision Tree methods. Random Forest is also well suited to a smaller sample sizes, like the data in this analysis. 
 Random Forest is peformed using the randomForest package (**REF**) however, loading this package using the `library` function masks the `margin` function of dplyr (**REF**) and the `margin` function of ggplot2 (**REF**). It is for this reason double colons are used to access functions from randomForest without loading the package itself. 
 
-```{r Random Forest}
+```{r Random Forest, include = FALSE}
 #Set random seed to make results reproducible
 set.seed(17)
 
