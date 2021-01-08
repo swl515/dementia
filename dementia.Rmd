@@ -145,6 +145,10 @@ lda <- train %>%
          atlas_scaling_factor) %>% 
   MASS::lda(grouping = train$CDR_2)
 
+```
+The model is first trained on the train data set using the `lda()` function. Then the function `predict()` is used to give the CDR scores predicted by the model for each observation in the train set, based on years of education, socioeconomic status, age, MMSE score, intracranial volume, whole brain volume and atlas scaling factor. The `confusionMatrix` function from the caret package [@caret] allows us to see the number of correct and  predictions of CDR. It also outputs a measure of accuracy. The model is 74.81% accurate when predicting the CDR of the train data. The P value is less than 0.05, which shows that the model accuracy is significantly better than if it were to just predict the most common class. 
+
+```{r LDA training}
 #Predict on the training data
 plda_train <- train %>% 
   select(years_of_education,
@@ -161,7 +165,10 @@ confusionMatrix(plda_train$class,
                 factor(train$CDR_2))
 
 #Accuracy is only 70.7%. Can be 95% certain that this lies between 64.81% and 76.08%. This is significantly better than by predicting the most common class. 
-
+```
+ 
+When the model is used to predict the CDRs in the test dataset, it is 77.27% accurate. This is higher than the accuracy for the training set, proving there is little to no overfitting. Again, the P value is less than 0.05. 
+```{r LDA test}
 #Predict classes of test data based on LDA model
 plda_test <- test %>% 
   select(years_of_education,
@@ -178,6 +185,12 @@ confusionMatrix(plda_test$class,
                factor(test$CDR_2))
 #Accuracy 73.86%. 95% confidence that this lies between 63.41% and 82.66%. Still significantly better than predicting the most common class. 
 
+```
+
+`ggplot()` can be used to plot LD1 vs LD2 in order to visualise how well the different CDRs separate; giving a measure of how well the model is able to predict CDR score. When the model is used to predict the classes on the training dataset, the different CDRs have a lot of overlap. (Figure \@ref(fig:LDA-train)). 
+
+```{r LDA-train, fig.cap="plot of LDA training set", fig.height = 4, fig.width = 6}
+
 #TO PLOT...
 #Extract scores from training set 
 lda_labelled_train <- data.frame(plda_train$x,
@@ -185,11 +198,6 @@ lda_labelled_train <- data.frame(plda_train$x,
 #extract the scores from test set
 lda_labelled_test <- data.frame(plda_test$x,
                                 CDR_2 = test$CDR_2)
-```
-The model is first trained on the train data set using the `lda()` function. Then the function `predict()` is used to give the CDR scores predicted by the model for each observation in the train set, based on years of education, socioeconomic status, age, MMSE score, intracranial volume, whole brain volume and atlas scaling factor. The `confusionMatrix` function from the caret package [@caret] allows us to see the number of correct and  predictions of CDR. It also outputs a measure of accuracy. The model is 70.7% accurate when predicting the CDR of the train data. The P value is less than 0.05, which shows that the model accuracy is significantly better than if it were to just predict the most common class. 
-When the model is used to predict the CDRs in the test dataset, it is 73.86% accurate. This is higher than the accuracy for the training set, proving there is little to no overfitting. Again, the P value is less than 0.05. 
-
-```{r LDA-train, fig.cap="plot of LDA training set"}
 
 source("scripts/theme_stella.R")
 
@@ -201,9 +209,9 @@ lda_labelled_train %>%
 #There is a fair bit of overlap between the different CDRs here. 
 ```
 
-`ggplot()` can be used to plot LD1 vs LD2 in order to visualise how well the different CDRs separate; giving a measure of how well the model is able to predict CDR score. When the model is used to predict the classes on the training dataset, the different CDRs have a lot of overlap. (Figure \@ref(fig:LDA-train)). 
+The CDR predictions based on the test dataset separate out a little better (Figure \@ref(fig:LDA-test)), but there is still a large amount of overlap between 0s and 0.5s. Hence, it is likely that the model would predict scores of 0 and 0.5 incorrectly. 
 
-```{r LDA-test, fig.cap="plot of LDA test set"}
+```{r LDA-test, fig.cap="plot of LDA test set", fig.height = 4, fig.width = 6}
 
 lda_labelled_test %>% 
   ggplot(aes(x = LD1, y = LD2, color = factor(CDR_2))) +
@@ -212,9 +220,10 @@ lda_labelled_test %>%
 
 #separates out a bit better. 
 ```
-The CDR predictions based on the test dataset separate out a little better (Figure \@ref(fig:LDA-test)), but there is still a large amount of overlap between 0s and 0.5s. Hence, it is likely that the model would predict scores of 0 and 0.5 incorrectly. 
 
-```{r LDA-both, fig.cap="plot of LDA train and test sets"}
+`rbind()` can be used to combine the predictions of the train and test datasets so they can be plotted together (Figure \@ref(fig:LDA-both)). Again, there is a large amount of overlap between the scores of 0 and 0.5. 
+
+```{r LDA-both, fig.cap="plot of LDA train and test sets", fig.height = 4, fig.width = 6}
 
 lda_labelled <- rbind(lda_labelled_test, lda_labelled_train)
 
@@ -226,7 +235,6 @@ lda_labelled %>%
 #not very clear distinction, especially at lower CDRs. 
 
 ```
-`rbind()` can be used to combine the predictions of the train and test datasets so they can be plotted together (Figure \@ref(fig:LDA-both)). Again, there is a large amount of overlap between the scores of 0 and 0.5. 
 
 ## Random Forest{-}
 Random Forests is a machine learning method for classification and regression. They operate by constructing a large number of decision trees from different subsets of a training dataset. The decision trees are then used to output the class that is the mode of the classes output by each of the individual trees. Random forest overcomes the common problem of overfitting which is encountered with Decision Tree methods. Random Forest is also well suited to a smaller sample sizes, like the data in this analysis. 
@@ -299,7 +307,7 @@ ntree refers to the number of trees to be generated and again, is optimised to t
 print(rf)
 ```
 
-Mean Decrease Accuracy and Mean Decrease Gini (Figure \@ref(fig:rf-variable-importance)) show how important a variable is in the model - the higher the score, the more important that variable is. Plots of these can be produced using the `importance()` and `varImpPlot()` functions of the randomForest package. Here the most important variables, and thus the best predictors of a higher clinical dementia rating, are group and MMSE score, which is expected as they both define dementia status based other assessments performed. Following this age and whole brain volume have the most importance. It is known that dementia is a condition well associated with ageing [@Garre-Olmo2018] and that variations in an individuals whole brain volume can impact on their likelihood of developing dementia [@Tate2011]. 
+Mean Decrease Accuracy and Mean Decrease Gini (Figure \@ref(fig:variable-importance)) show how important a variable is in the model - the higher the score, the more important that variable is. Plots of these can be produced using the `importance()` and `varImpPlot()` functions of the randomForest package. Here the most important variables, and thus the best predictors of a higher clinical dementia rating, are group and MMSE score, which is expected as they both define dementia status based other assessments performed. Following this age and whole brain volume have the most importance. It is known that dementia is a condition well associated with ageing [@Garre-Olmo2018] and that variations in an individuals whole brain volume can impact on their likelihood of developing dementia [@Tate2011]. 
 
 ```{r variable importance, include = FALSE}
 #Evaluate the variable importance
@@ -308,11 +316,10 @@ randomForest::importance(rf)
 ```
 
 
-```{r Random_Forest_Variable_Importance, fig.cap="rf-variable-importance"}
+```{r variable-importance, fig.cap="Mean Decrease Accuracy and Mean Decrease Gini", fig.height = 5, fig.width = 8}
 #Evaluate the variable importance
 randomForest::varImpPlot(rf)
 ```
-
 
 ## Conclusion{-}
 Both LDA and Random Forest can be used to predict Clinical Dementia Rating based on factors such as age, socioeconomic status, intracranial volume etc. Linear Discriminant Analysis is able to predict CDR with 73.86% accuracy. This is relatively low accuracy but this could be due to the fact that this data set is relatively small; the model is built on just 266 observations and is tested on 88. The Random Forest method is better suited to smaller sample sizes which would explain the low OOB error rate of just 3.11% 
