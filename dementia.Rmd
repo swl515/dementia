@@ -1,5 +1,5 @@
 ---
-title: "Dementia"
+title: "BIO00058M Dementia Case Study"
 author: "Examination Number: Y3866839"
 date: "30/11/2020"
 output: 
@@ -322,7 +322,7 @@ randomForest::varImpPlot(rf)
 ```
 
 ## Conclusion{-}
-Both LDA and Random Forest can be used to predict Clinical Dementia Rating based on factors such as age, socioeconomic status, intracranial volume etc. Linear Discriminant Analysis is able to predict CDR with 73.86% accuracy. This is relatively low accuracy but this could be due to the fact that this data set is relatively small; the model is built on just 266 observations and is tested on 88. The Random Forest method is better suited to smaller sample sizes which would explain the low OOB error rate of just 3.11% 
+Both LDA and Random Forest can be used to predict Clinical Dementia Rating based on factors such as age, socioeconomic status, intracranial volume etc. Linear Discriminant Analysis is able to predict CDR with 73.86% accuracy. This is relatively low accuracy but this could be due to the fact that this data set is relatively small; the model is built on just 266 observations and is tested on 88. The Random Forest method is better suited to smaller sample sizes which would explain the low OOB error rate of just 3.11%. Random Forest also shows which variables are the most important in the model. It is for these reasons that I believe that Random Forest is a better model in predicting Clinical Dementia Rating.
 
 ```{r wordcount, include = FALSE}
 
