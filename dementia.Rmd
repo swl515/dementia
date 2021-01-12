@@ -333,13 +333,16 @@ wc_readme <- wordcountaddin::word_count("README.md")
 wc_session <- wordcountaddin::word_count("sessioninfo.md")
 
 ```
-**Wordcount**
+
+#### **Wordcount**{-}
+
 This document: `r wc_main`\
 README: `r wc_readme`\
 
 **Total: `r wc_main + wc_readme`**
 
-```{r}
+```{r session info}
+#created session info document. this is linked to in the rmd 
 file <- "sessioninfo.md"
 writeLines(capture.output(sessionInfo()), file)
 ```
