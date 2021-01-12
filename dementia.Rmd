@@ -326,10 +326,23 @@ Both LDA and Random Forest can be used to predict Clinical Dementia Rating based
 
 ```{r wordcount, include = FALSE}
 
-wordcount <- wordcountaddin::word_count("dementia.Rmd")
-wordcount
+wc_main <- wordcountaddin::word_count("dementia.Rmd")
+
+wc_readme <- wordcountaddin::word_count("README.md")
+
+wc_session <- wordcountaddin::word_count("sessioninfo.md")
 
 ```
-**Wordcount:** `r wordcount`
+**Wordcount**
+This document: `r wc_main`\
+README: `r wc_readme`\
+
+**Total: `r wc_main + wc_readme`**
+
+```{r}
+file <- "sessioninfo.md"
+writeLines(capture.output(sessionInfo()), file)
+```
+
 
 ## References{-}

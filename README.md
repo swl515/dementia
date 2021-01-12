@@ -1,10 +1,12 @@
 # BIO00058M Dementia Case Study
-An analysis on clinical visit data for 150 dementia patients. The aim of the analysis is to predict the patients Clinical Dementia Ratings based on a number of factors associated with increased dementia risk and disease progression. CDR is predicted using both linear discriminant analysis and random forest supervised machine learning methods; then the two methods are compared as to which predicts CDR better. 
 
-# Technical Description
+## Description
+An analysis on clinical visit data for 150 dementia patients. The aim is to predict the patients Clinical Dementia Ratings based on factors associated with increased dementia risk and disease progression. CDR is predicted using both linear discriminant analysis and random forest supervised machine learning methods; then the two methods are compared as to which predicts CDR better. 
+
+## Technical Description
 R version 4.0.3 (2020-10-10)
 
-# Packages
+## Packages
  * tidyverse_1.3.0
  * magrittr_2.0.1
  * dplyr_1.0.2 
@@ -16,3 +18,5 @@ R version 4.0.3 (2020-10-10)
  * tidyr_1.1.2
  * MASS_7.3-5.3
  * randomForest4.6-14
+ 
+The output of `sessionInfo()` can be found in [Session Information](sessioninfo.md)
