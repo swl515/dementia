@@ -176,7 +176,8 @@ confusionMatrix(plda_train$class,
 #Accuracy is only 70.7%. Can be 95% certain that this lies between 64.81% and 76.08%. This is significantly better than by predicting the most common class. 
 ```
  
-When the model is used to predict the CDRs in the test dataset, it is 77.27% accurate. This is higher than the accuracy for the training set, proving there is little to no overfitting. Again, the P value is less than 0.05. 
+When the model is used to predict the CDRs in the test dataset, it is 74.81% accurate. This is higher than the accuracy for the training set, proving there is little to no overfitting. Again, the P value is less than 0.05. 
+
 ```{r LDA-predict-test}
 #Predict classes of test data based on LDA model
 plda_test <- test %>% 
