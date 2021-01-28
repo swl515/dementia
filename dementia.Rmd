@@ -29,7 +29,7 @@ Clinical visit data was collected from 150 subjects aged between 60 and 96. Data
 
 The Clinical Dementia Rating (CDR) is a global rating device, calculated on the basis of testing six cognitive and behavioural domains. It is based on a five point scale of 0-3; 0 = no dementia, 0.5 = questionable dementia, 1 = mild dementia, 2 = moderate dementia and 3 = severe dementia [@Morris1997].
 
-The analysis performed here combines patient and visit data and tidies the data into a format suitable for analysis. The analysis uses supervised methods of machine learning to predict CDR based factors associated with increased risk of dementia, such as age [@Garre-Olmo2018], and factors associated with dementia progression, such as intracranial volume [@Tate2011]. Two methods of machine learning are used and compared.
+The analysis performed here combines patient and visit data and tidies the data into a format suitable for analysis. The analysis uses supervised methods of machine learning to predict CDR based on factors associated with increased risk of dementia, such as age [@Garre-Olmo2018], and factors associated with dementia progression, such as intracranial volume [@Tate2011]. Two methods of machine learning are used here and are compared.
 
 Analysis was conducted in R [@Rbase] using Rmarkdown [@Allaire2020; @Xie2018; @Xie2020]
 
@@ -73,7 +73,7 @@ colnames_visit <- c("subject_ID", "MRI_number", "visit", "age", "MMSE_score", "C
 names(visit) <- colnames_visit
 ```
 
-The visit and patient data were read in as two separate files as they have different amounts of variables. Various 'join' functions combine two dataframes ("x" and "y") via a specified join column, present in both dataframes. In this case the chosen join column was subject_ID. The `inner_join()` function was used here and creates a dataframe which retains all the rows from dataframes x and y, therefore enabling you to join two dataframes with different numbers of observations. If one dataframe (x) has less rows than the other (y) the rows in x will be duplicated based on the observations in the join column. Here, patient data rows are duplicated for every set of visit data from that patient. 
+The visit and patient data were read in as two separate files as they have different amounts of variables. Various 'join' functions combine two dataframes ("x" and "y") via a specified join column, present in both dataframes. In this case the chosen join column was subject_ID. The `inner_join()` function was used here and creates a dataframe which retains all the rows from dataframes x and y, therefore enabling two dataframes with different numbers of rows to be joined. If one dataframe (x) has less rows than the other (y) the rows in x will be duplicated based on the observations in the join column. Here, patient data rows are duplicated for every set of visit data from that patient. 
 
 ```{r innerjoin, include = FALSE}
 #Join the patient data and visit data tables together using inner join. this function compared to others enables you to duplicate the patient data rows to joing together based on subject id. You can multiply the patient data so same no obs.
@@ -151,7 +151,7 @@ lda <- train %>%
 ```
 
 
-The model is first trained using the `lda()` function. Then the function `predict()` is used to give the CDR scores predicted by the model for each observation in the train set, based on years of education, socioeconomic status, age, MMSE score, intracranial volume, whole brain volume and atlas scaling factor. The `confusionMatrix` function from the caret package [@caret] allows us to see the number of correct predictions of CDR and outputs a measure of accuracy. The model is 74.81% accurate when predicting the CDR of the train data. The P value is less than 0.05, which shows that the model accuracy is significantly better than if it were to just predict the most common class. 
+The model is first trained using the `lda()` function. Then the function `predict()` is used to give the CDR scores predicted by the model for each observation in the train set, based on years of education, socioeconomic status, age, MMSE score, intracranial volume, whole brain volume and atlas scaling factor. 
 
 ```{r LDA-predict-train}
 #Predict on the training data
@@ -173,10 +173,24 @@ plda_train <- train %>%
 confusionMatrix(plda_train$class,
                 factor(train$CDR_2))
 
-#Accuracy is only 70.7%. Can be 95% certain that this lies between 64.81% and 76.08%. This is significantly better than by predicting the most common class. 
+#assign confusion matrix
+cm_train <- confusionMatrix(plda_train$class,
+                factor(train$CDR_2))
+
+#extract accuracy value for reporting in inline code
+accuracy_train <- cm_train$overall['Accuracy']
+
+#Accuracy is only 74.81%. This will vary each time it is run. This is significantly better than by predicting the most common class. 
+```
+The `confusionMatrix` function from the caret package [@caret] allows us to see the number of correct predictions of CDR and outputs a measure of accuracy. The model accuracy is `r accuracy_train` when predicting the CDR of the train data. The P value is less than 0.05, which shows that the model accuracy is significantly better than if it were to just predict the most common class.  
+ 
+```{r confusion-matrix-train-report, include = TRUE}
+
+confusionMatrix(plda_train$class,
+                factor(train$CDR_2))
+
 ```
  
-When the model is used to predict the CDRs in the test dataset, it is 74.81% accurate. This is higher than the accuracy for the training set, proving there is little to no overfitting. Again, the P value is less than 0.05. 
 
 ```{r LDA-predict-test}
 #Predict classes of test data based on LDA model
@@ -196,9 +210,25 @@ plda_test <- test %>%
 #Examine the confusion matrix
 confusionMatrix(plda_test$class,
                factor(test$CDR_2))
-#Accuracy 73.86%. 95% confidence that this lies between 63.41% and 82.66%. Still significantly better than predicting the most common class. 
+
+#assign confusion matrix
+cm_test <- confusionMatrix(plda_test$class,
+               factor(test$CDR_2))
+
+#extract accuracy value for reporting in inline code
+accuracy_test <- cm_test$overall['Accuracy']
+
+#Accuracy 70.45%. This will vary. Still significantly better than predicting the most common class. 
 
 ```
+When the model is used to predict the CDRs in the test dataset, the accuracy is `r accuracy_test` . This is higher than the accuracy for the train data, suggesting little to no overfitting. Again, the P value is less than 0.05. 
+
+```{r confusion-matrix-test-report, include = TRUE}
+confusionMatrix(plda_test$class,
+               factor(test$CDR_2))
+
+```
+
 
 `ggplot()` can be used to plot LD1 vs LD2 in order to visualise how well the different CDRs separate; giving a measure of how well the model is able to predict CDR score. When the model is used to predict the classes on the training dataset, there is a lot of overlap between CDRs. (Figure \@ref(fig:LDA-plot-train)). 
 
@@ -344,7 +374,7 @@ randomForest::varImpPlot(rf)
 ```
 
 ## Conclusion{-}
-Both LDA and Random Forest can be used to predict Clinical Dementia Rating. Linear Discriminant Analysis is able to predict CDR with 73.86% accuracy. This is relatively low which could be due to the relatively small size of this dataset; the model is built on just 266 observations and is tested on 88. The Random Forest method is better suited to smaller sample sizes which would explain the low OOB error rate of just 3.11%. Random Forest also shows which variables are the most important in the model. For these reasons, I believe that Random Forest is a better model in predicting Clinical Dementia Rating.
+Both LDA and Random Forest can be used to predict Clinical Dementia Rating. Linear Discriminant Analysis is able to predict CDR with an accuracy of `r accuracy_test`. This is relatively low which could be due to the relatively small size of this dataset; the model is built on just 266 observations and is tested on 88. The Random Forest method is better suited to smaller sample sizes which would explain the low OOB error rate of just 3.11%. Random Forest also shows which variables are the most important in the model. For these reasons, I believe that Random Forest is a better model in predicting Clinical Dementia Rating.
 
  <!-- based on factors such as age, socioeconomic status, intracranial volume etc -->
 ```{r wordcount, include = FALSE}
